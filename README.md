@@ -1,70 +1,113 @@
-# Getting Started with Create React App
+# Dive
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Dive is a todo app for turning vague work into smaller, doable next actions.
 
-## Available Scripts
+The backend stores tasks and subtasks. The frontend gives you a compact task list and detail view. The AI splitter uses Mistral to create practical subtasks, with shared cooldown handling for provider rate limits.
 
-In the project directory, you can run:
+## Stack
 
-### `npm start`
+- Laravel 12 API
+- SQLite for local development
+- React 18 with Vite
+- Mistral chat completions for task splitting
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Layout
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- `backend/` - Laravel API
+- `frontend/` - React client
 
-### `npm test`
+## Prerequisites
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- PHP 8.2 or newer
+- Composer
+- Node 26 or newer
+- npm
+- A Mistral API key
 
-### `npm run build`
+## Backend Setup
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+cd backend
+composer install
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Set the database values in `backend/.env`:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+DB_CONNECTION=sqlite
+DB_DATABASE=/absolute/path/to/dive-monorepo/backend/database/database.sqlite
+```
 
-### `npm run eject`
+Set the Mistral values in `backend/.env`:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```bash
+MISTRAL_API_KEY=
+MISTRAL_MODEL=mistral-large-latest
+MISTRAL_ENDPOINT=https://api.mistral.ai/v1/chat/completions
+MISTRAL_TIMEOUT=30
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Run migrations and start the API:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+php artisan migrate
+php artisan serve --host=127.0.0.1 --port=8080
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+The API will be available at `http://127.0.0.1:8080/api`.
 
-## Learn More
+## Frontend Setup
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+cd frontend
+npm install
+cp .env.example .env 2>/dev/null || printf 'VITE_DIVE_API=http://localhost:8080/api\n' > .env
+npm start -- --port 3001
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+The frontend will be available at `http://localhost:3001`.
 
-### Code Splitting
+By default, the frontend expects the API at `http://localhost:8080/api`. Override it in `frontend/.env`:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```bash
+VITE_DIVE_API=http://localhost:8080/api
+```
 
-### Analyzing the Bundle Size
+## AI Splitting
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Dive sends the selected task, its ancestors, and any existing subtasks to Mistral and expects a JSON response containing subtasks. The backend creates those subtasks in order and returns them to the frontend.
 
-### Making a Progressive Web App
+When Mistral returns `429`, Dive reads `Retry-After`, stores a local cooldown, and returns the retry window to the frontend. That keeps repeated split attempts from hammering the provider while the key is cooling down.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## API
 
-### Advanced Configuration
+```bash
+GET    /api/tasks
+POST   /api/tasks
+GET    /api/tasks/{taskId}
+PATCH  /api/tasks/{taskId}
+DELETE /api/tasks/{taskId}
+POST   /api/tasks/{taskId}/split
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Checks
 
-### Deployment
+Backend:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+```bash
+cd backend
+php artisan test --testsuite=Feature
+composer audit
+```
 
-### `npm run build` fails to minify
+Frontend:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```bash
+cd frontend
+npm test
+npm run build
+npm audit
+```
