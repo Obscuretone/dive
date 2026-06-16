@@ -64,16 +64,16 @@ The API will be available at `http://127.0.0.1:8080/api`.
 ```bash
 cd frontend
 npm install
-cp .env.example .env 2>/dev/null || printf 'VITE_DIVE_API=http://localhost:8080/api\n' > .env
+cp .env.example .env 2>/dev/null || printf 'VITE_DIVE_API=http://127.0.0.1:8080/api\n' > .env
 npm start -- --port 3001
 ```
 
 The frontend will be available at `http://localhost:3001`.
 
-By default, the frontend expects the API at `http://localhost:8080/api`. Override it in `frontend/.env`:
+By default, the frontend expects the API at `http://127.0.0.1:8080/api`. Override it in `frontend/.env`:
 
 ```bash
-VITE_DIVE_API=http://localhost:8080/api
+VITE_DIVE_API=http://127.0.0.1:8080/api
 ```
 
 ## AI Splitting

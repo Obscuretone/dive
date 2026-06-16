@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './App.css';
 
-const API_BASE = import.meta.env.VITE_DIVE_API || 'http://localhost:8080/api';
+const API_BASE = import.meta.env.VITE_DIVE_API || 'http://127.0.0.1:8080/api';
 
 async function apiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -32,6 +32,7 @@ function TaskForm({ parentId, onCreated }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -40,6 +41,7 @@ function TaskForm({ parentId, onCreated }) {
     }
 
     setSaving(true);
+    setError('');
     try {
       const payload = await apiRequest('/tasks', {
         method: 'POST',
@@ -52,6 +54,8 @@ function TaskForm({ parentId, onCreated }) {
       setTitle('');
       setDescription('');
       onCreated(payload.task);
+    } catch (requestError) {
+      setError(requestError.message);
     } finally {
       setSaving(false);
     }
@@ -74,6 +78,7 @@ function TaskForm({ parentId, onCreated }) {
       <button type="submit" disabled={saving || !title.trim()}>
         {saving ? 'Adding...' : 'Add'}
       </button>
+      {error && <p className="notice error">{error}</p>}
     </form>
   );
 }
