@@ -31,3 +31,13 @@ backend/database/*.sqlite
 .fleet/
 .idea/
 .vscode/
+
+# Local files and installed dependencies
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+!.env.sample
+!.env.template
+.nira/*.db
+.nira/*.db-*
